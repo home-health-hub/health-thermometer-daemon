@@ -387,6 +387,9 @@ One `readings` table, one row per completed measurement:
 
 ## Reports
 
+A sample generated report: [samples/sample-report.pdf](samples/sample-report.pdf)
+(synthetic data, not a real reading history).
+
 ```bash
 # Every reading on record
 health-thermometer-report --config /etc/health-thermometer-daemon/config.ini
