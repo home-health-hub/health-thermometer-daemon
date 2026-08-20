@@ -1,0 +1,8 @@
+[Unit]
+Description=Check health thermometer readings for stale/fever-range/hypothermia-range conditions
+
+[Service]
+Type=oneshot
+User=health-thermometer-daemon
+Group=health-thermometer-daemon
+ExecStart=/usr/bin/health-thermometer-alert-check --config /etc/health-thermometer-daemon/config.ini

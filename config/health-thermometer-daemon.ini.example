@@ -1,0 +1,232 @@
+[daemon]
+# Leave address empty to auto-discover the device on first run (power it on
+# / take a reading while the daemon is scanning). Once discovered, this
+# file is updated automatically so future restarts reconnect directly
+# instead of scanning again.
+address =
+
+# Seconds to wait before retrying after a failed connection/read attempt.
+retry_seconds = 30
+
+# Logging level: DEBUG, INFO, WARNING, ERROR
+log_level = INFO
+
+[storage]
+# Path to the SQLite database file where readings are recorded.
+db_path = /var/lib/health-thermometer-daemon/readings.db
+
+[report]
+# Include the device's BLE address as a column/field.
+include_address = yes
+
+# Show which profile (or "Device <address>" if unset) each reading belongs to.
+include_profile = no
+
+# Print an avg/min/max summary and fever/hypothermia band breakdown below
+# the title.
+include_summary = yes
+
+# Unit to render temperature values in: c or f. Stored readings are kept
+# exactly as the device reported them; this only affects report display.
+unit = c
+
+# Date/time format: us (MM/DD/YYYY, 12-hour) or world (DD/MM/YYYY, 24-hour)
+date_format = world
+
+# PDF page size: letter or a4
+page_size = letter
+
+# Include the temperature trend chart (one line per person). PDF only.
+include_chart = yes
+
+# Include a reading table at all (see table_layout below for which shape).
+# PDF only; CSV export always includes the full row set regardless of
+# either of these two settings.
+include_table = yes
+
+# Shape of the table, when include_table = yes:
+#   full    - one row per reading (default). Sprawls across many pages for
+#             a long history (e.g. a year of daily readings = 365+ rows).
+#   compact - Date/Temperature only, packed into 3 side-by-side column
+#             groups so a page isn't mostly empty. Still one row per
+#             reading, just denser.
+#   rollup  - one row per week/month instead of per reading (avg/min/max
+#             temperature, reading count, and the worst fever/hypothermia
+#             band seen that period). A year of daily readings becomes ~52
+#             rows instead of 365 -- the practical answer for a long
+#             history, paired with the chart above.
+table_layout = full
+
+# Rollup bucket size, only used when table_layout = rollup: week (ISO
+# calendar week, Monday-Sunday) or month (calendar month).
+rollup_period = week
+
+[mqtt]
+# Publish each reading to an MQTT broker as JSON. Defaults to no. A broker
+# outage is logged and non-fatal -- it never blocks local recording.
+enabled = no
+
+# Required if enabled = yes.
+host =
+port = 1883
+
+# Optional broker credentials; leave blank if not required.
+username =
+password =
+
+# yes or no -- wraps the connection in TLS
+use_tls = no
+
+# Messages publish to <topic_prefix>/<device address>/state
+topic_prefix = health_thermometer_daemon
+
+# MQTT delivery guarantee for each publish: 0 (at most once -- fire and
+# forget, no ack/retry), 1 (at least once -- retries until acked, may
+# duplicate), or 2 (exactly once -- slowest, most overhead). Defaults to 0
+# since a dropped publish isn't a real loss -- the reading is already
+# durably recorded in the local database regardless of MQTT.
+qos = 0
+
+# yes or no -- whether the broker retains the last message for new subscribers
+retain = yes
+
+[alerting]
+# Notify via Apprise (https://github.com/caronc/apprise) on staleness,
+# fever-range, or hypothermia-range readings. Checked by
+# health-thermometer-alert-check, run periodically (see
+# health-thermometer-alert-check.timer) -- nothing here runs automatically
+# on its own. Defaults to no.
+enabled = no
+
+# Comma-separated Apprise service URLs, e.g. tgram://bot_token/chat_id.
+# Required if enabled = yes.
+apprise_urls =
+
+# Alert if a device hasn't reported in this many days. 0 disables this check.
+stale_after_days = 0
+
+# Alert if the latest reading is at or above this temperature, in Celsius
+# regardless of the unit the device itself reported. 0 disables the check.
+high_temp_alert_celsius = 38.0
+
+# Alert if the latest reading is at or below this temperature, in Celsius.
+# Leave blank to disable the check (the default -- unlike the fever
+# threshold above).
+low_temp_alert_celsius =
+
+# Where to persist per-device alert state (throttling repeat alerts).
+state_path = /var/lib/health-thermometer-daemon/alert-state.json
+
+[api]
+# Lightweight local HTTP API (health-thermometer-api): GET /api/v1/health,
+# /api/v1/capabilities, /api/v1/latest, and /api/v1/report. Defaults to no.
+# There's no TLS built in -- keep host bound to loopback (the default)
+# unless it sits behind a reverse proxy.
+enabled = no
+
+# Bind address. Change to 0.0.0.0 (or a specific interface) only if you
+# understand the exposure -- set token below if you do.
+host = 127.0.0.1
+port = 8080
+
+# Optional bearer token: if set, all endpoints except /api/v1/health and
+# /api/v1/capabilities require an "Authorization: Bearer <token>" header.
+# Leave blank for no auth (fine for loopback-only use).
+token =
+
+[profiles]
+# Ask "who was this?" for each reading, for a device shared by more than
+# one person. Unlike a shared blood-pressure monitor or scale, this device
+# class has no device-side "user slot" at all -- a thermometer reading has
+# no identity of its own, so every reading starts fully unidentified.
+# Defaults to no. Two delivery paths, chosen automatically:
+#   - If [api] is enabled: an ntfy notification (Android/iOS apps, or any
+#     browser) with one HTTP action button per name below, each calling
+#     back into this API's /api/v1/assign-profile endpoint when tapped.
+#     Needs ntfy_url set.
+#   - If [api] is disabled: a local dunstify prompt instead, since ntfy's
+#     action buttons would have nothing to call back to. Needs dunstify
+#     (part of the dunst notification daemon) and a real desktop/D-Bus
+#     session -- this won't reach anywhere from a headless system service
+#     without one, so it's mainly useful running the daemon on your own
+#     desktop/laptop rather than an unattended Pi.
+enabled = no
+
+# Comma-separated list of names to choose between. No limit -- unlike a
+# device's own hardware user slots, any number of people can share the
+# tagging.
+names =
+
+# Required only when [api] is enabled: an ntfy topic URL, e.g.
+# https://ntfy.sh/your-topic or a self-hosted https://ntfy.example.com/your-topic.
+ntfy_url =
+
+# Optional access token, if your ntfy server/topic requires auth.
+ntfy_token =
+
+# Where this API is reachable, for the ntfy action buttons to call back
+# into. Only used when [api] is enabled.
+api_base_url = http://127.0.0.1:8080
+
+# Seconds to wait for a dunstify response before giving up. Only used
+# when [api] is disabled.
+dunstify_timeout_seconds = 30
+
+# Reject /api/v1/assign-profile requests tagging a reading older than this many
+# seconds, unless &confirm=1 is also passed. Guards against a delayed
+# ntfy notification -- tapped long after it was sent, once connectivity
+# returns -- silently tagging a now-stale reading. 0 disables the check
+# (the default). Only relevant when [api] is enabled.
+assign_window_seconds = 0
+
+# One [profile.<name>] section per name listed in [profiles] names above.
+# A missing section just falls back to blanks/unset -- none of this is
+# required for tagging to work, it only personalizes reports/alerts if
+# provided.
+#
+# --- Report personalization (health-thermometer-report --profile / API ?profile=) ---
+#
+# name/email print below the title in PDF reports (e.g. for handing a
+# report to a doctor -- leave either blank to omit that line). notes is a
+# free-text line for clinical context (e.g. current illness).
+#
+# unit (c or f) / date_format (us or world) / page_size (letter or a4)
+# each independently override the matching [report] setting for this
+# profile's reports only -- leave blank to just use the shared default.
+# Handy when people sharing a device think in different units or are used
+# to different date conventions.
+#
+# --- Alert overrides (health-thermometer-alert-check) ---
+#
+# These only apply to alerts triggered by readings tagged with this
+# profile (untagged readings always use the global [alerting] values).
+# Each is independent and optional:
+#
+# apprise_urls (comma-separated) replaces -- not adds to -- the global
+# [alerting] apprise_urls for this profile's alerts, so e.g. Alice's alerts
+# go to her phone and Bob's go to his instead of a shared list. Leave
+# blank to just use the global list.
+#
+# stale_after_days overrides [alerting] stale_after_days for this profile
+# (0 explicitly disables the check for them, blank means "inherit the
+# global value").
+#
+# high_temp_alert_celsius overrides [alerting] high_temp_alert_celsius for
+# this profile; leave blank to inherit.
+#
+# low_temp_alert_celsius is never overridden per profile -- there's no
+# [profile.<name>] field for it.
+#
+# [profile.Alice]
+# name = Alice Smith
+# email = alice@example.com
+# notes = Recovering from flu
+# unit = f
+# apprise_urls = tgram://bot_token/alice_chat_id
+# stale_after_days = 1
+# high_temp_alert_celsius = 38.5
+#
+# [profile.Bob]
+# name = Bob Jones
+# unit = c
+# apprise_urls = tgram://bot_token/bob_chat_id

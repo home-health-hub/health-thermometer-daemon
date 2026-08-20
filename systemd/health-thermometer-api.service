@@ -1,0 +1,14 @@
+[Unit]
+Description=Health Thermometer HTTP API (latest reading / on-demand report)
+After=health-thermometer-daemon.service
+
+[Service]
+Type=simple
+User=health-thermometer-daemon
+Group=health-thermometer-daemon
+ExecStart=/usr/bin/health-thermometer-api --config /etc/health-thermometer-daemon/config.ini
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Generate a scheduled health thermometer report
+
+[Service]
+Type=oneshot
+User=health-thermometer-daemon
+Group=health-thermometer-daemon
+ExecStart=/usr/bin/health-thermometer-generate-report
