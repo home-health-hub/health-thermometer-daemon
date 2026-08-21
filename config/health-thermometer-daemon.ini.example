@@ -19,6 +19,9 @@ db_path = /var/lib/health-thermometer-daemon/readings.db
 # Include the device's BLE address as a column/field.
 include_address = yes
 
+# Include the device's reported battery percentage as a column/field.
+include_battery = yes
+
 # Show which profile (or "Device <address>" if unset) each reading belongs to.
 include_profile = no
 
