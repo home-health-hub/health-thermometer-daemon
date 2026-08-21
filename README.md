@@ -387,8 +387,13 @@ One `readings` table, one row per completed measurement:
 
 ## Reports
 
-A sample generated report: [samples/sample-report.pdf](samples/sample-report.pdf)
-(synthetic data, not a real reading history).
+Sample generated reports (synthetic data, not a real reading history), one
+per `table_layout`/format combination:
+
+- [samples/sample-report-full.pdf](samples/sample-report-full.pdf) — `table_layout = full`
+- [samples/sample-report-compact.pdf](samples/sample-report-compact.pdf) — `table_layout = compact`
+- [samples/sample-report-rollup.pdf](samples/sample-report-rollup.pdf) — `table_layout = rollup`
+- [samples/sample-report.csv](samples/sample-report.csv) — `--format csv`
 
 ```bash
 # Every reading on record
