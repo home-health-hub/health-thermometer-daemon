@@ -251,7 +251,10 @@ def build_csv(rows: list[ReportRow], output_path: str, report_config: ReportConf
         header.append("Address")
     if report_config.include_profile:
         header.append("Who")
-    header.extend([f"Temperature ({unit_label})", "Site", "Category", "Battery %", "Error"])
+    header.extend([f"Temperature ({unit_label})", "Site", "Category"])
+    if report_config.include_battery:
+        header.append("Battery %")
+    header.append("Error")
 
     with open(output_path, "w", newline="") as csv_file:
         writer = csv.writer(csv_file)
@@ -267,10 +270,11 @@ def build_csv(rows: list[ReportRow], output_path: str, report_config: ReportConf
                     f"{_display_value(row, report_config.unit):.1f}",
                     row.temperature_type or "",
                     classify(row.value, row.unit),
-                    row.battery_percent if row.battery_percent is not None else "",
-                    row.error_code or "",
                 ]
             )
+            if report_config.include_battery:
+                values.append(row.battery_percent if row.battery_percent is not None else "")
+            values.append(row.error_code or "")
             writer.writerow(values)
 
 
@@ -303,7 +307,10 @@ def _build_table(rows: list[ReportRow], report_config: ReportConfig) -> Table:
         header.append("Address")
     if report_config.include_profile:
         header.append("Who")
-    header.extend([f"Temp\n({unit_label})", "Site", "Category", "Battery"])
+    numeric_col = len(header)
+    header.extend([f"Temp\n({unit_label})", "Site", "Category"])
+    if report_config.include_battery:
+        header.append("Battery")
 
     data = [header]
     categories: list[str] = []
@@ -321,12 +328,12 @@ def _build_table(rows: list[ReportRow], report_config: ReportConfig) -> Table:
                 f"{_display_value(row, report_config.unit):.1f}",
                 row.temperature_type or "-",
                 category,
-                f"{row.battery_percent}%" if row.battery_percent is not None else "-",
             ]
         )
+        if report_config.include_battery:
+            values.append(f"{row.battery_percent}%" if row.battery_percent is not None else "-")
         data.append(values)
 
-    numeric_col = len(header) - 4
     style_commands = _header_style_commands()
     style_commands.append(("ALIGN", (numeric_col, 1), (numeric_col, -1), "RIGHT"))
     for row_index, category in enumerate(categories, start=1):

@@ -27,6 +27,7 @@ class ReportConfig:
     """Parsed [report] section controlling PDF/CSV report rendering."""
 
     include_address: bool
+    include_battery: bool
     include_profile: bool
     include_summary: bool
     include_chart: bool  # PDF only
@@ -40,6 +41,7 @@ class ReportConfig:
 
 DEFAULT_REPORT_CONFIG = ReportConfig(
     include_address=True,
+    include_battery=True,
     include_profile=False,
     include_summary=True,
     include_chart=True,
@@ -317,6 +319,9 @@ def load_report_config(config_path: str) -> ReportConfig:
     return ReportConfig(
         include_address=_parse_bool(
             report.get("include_address", "yes"), "report.include_address"
+        ),
+        include_battery=_parse_bool(
+            report.get("include_battery", "yes"), "report.include_battery"
         ),
         include_profile=_parse_bool(
             report.get("include_profile", "no"), "report.include_profile"
